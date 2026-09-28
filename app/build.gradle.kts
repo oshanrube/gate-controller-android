@@ -17,15 +17,16 @@ android {
         versionName = "1.0.0"
     }
 
-    // The Play upload key. CI decodes it from the UPLOAD_KEYSTORE_BASE64 secret; without
-    // it, release builds fall back to the debug key (fine for sideloading, refused by Play).
+    // The Play upload key, at UPLOAD_KEYSTORE_PATH (CI decodes it there from the
+    // UPLOAD_KEYSTORE_BASE64 secret on master and manual runs only). Without it, release builds
+    // fall back to the debug key: fine for sideloading, refused by Play.
     val uploadKeystore = System.getenv("UPLOAD_KEYSTORE_PATH")?.let { file(it) }?.takeIf { it.exists() }
     signingConfigs {
         if (uploadKeystore != null) {
             // An unset secret reaches the build as an empty string, not as null.
             fun secret(name: String) = System.getenv(name)?.takeIf { it.isNotBlank() }
             val storePass = secret("UPLOAD_KEYSTORE_PASSWORD")
-                ?: throw GradleException("UPLOAD_KEYSTORE_BASE64 is set but the UPLOAD_KEYSTORE_PASSWORD secret is missing")
+                ?: throw GradleException("UPLOAD_KEYSTORE_PATH is set but UPLOAD_KEYSTORE_PASSWORD is missing")
             create("upload") {
                 storeFile = uploadKeystore
                 storePassword = storePass

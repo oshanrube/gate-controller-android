@@ -30,9 +30,10 @@ Check with [Google's statement tester](https://developers.google.com/digital-ass
 
 ## Publishing to Google Play
 
-The same setup as the Wear OS app: CI builds a signed bundle when these repository secrets are
-set, and uploads it to the **internal testing** track on pushes to `master` or a manual run of
-the Build workflow, once the `PLAY_PUBLISH` repository variable is `true`.
+CI signs the bundle with the upload key, and uploads it to the **internal testing** track, only
+on pushes to `master` and manual runs of the Build workflow; the upload also waits for the
+`PLAY_PUBLISH` repository variable to be `true`. Pull requests and other branches build with the
+debug key and never see these secrets, since they run Gradle scripts a branch can change.
 
 | Secret | Value |
 | --- | --- |
@@ -42,8 +43,9 @@ the Build workflow, once the `PLAY_PUBLISH` repository variable is `true`.
 | `UPLOAD_KEY_PASSWORD` | key password (optional, defaults to the keystore password) |
 | `PLAY_SERVICE_ACCOUNT_JSON` | the same service account, given access to this app in Play Console |
 
-The first bundle has to be uploaded by hand (the Play API cannot create an app); the
-`gate-controller-bundle` artifact of any Build run is that bundle.
+The first bundle has to be uploaded by hand (the Play API cannot create an app). Set the
+upload-key secrets first, then take the `gate-controller-bundle` artifact from a `master` or
+manual Build run: other runs are signed with the debug key, which Play refuses.
 
 Privacy policy: https://gatecontroller.oshanrube.com/privacy — data safety answers:
 https://gatecontroller.oshanrube.com/data-safety (the web app's).
