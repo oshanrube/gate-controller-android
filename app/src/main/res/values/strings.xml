@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Gate Controller</string>
+
+    <!-- The site this app shows. The host must serve /.well-known/assetlinks.json naming this
+         app (see gate-controller's AssetLinksController), or Chrome adds an address bar. -->
+    <string name="launch_url">https://gatecontroller.oshanrube.com/</string>
+    <string name="host_name">gatecontroller.oshanrube.com</string>
+
+    <!-- This app's half of the Digital Asset Links handshake: it names the site back. -->
+    <string name="asset_statements" translatable="false">
+        [{
+            \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+            \"target\": {
+                \"namespace\": \"web\",
+                \"site\": \"https://gatecontroller.oshanrube.com\"
+            }
+        }]
+    </string>
+
+    <string name="provider_authority" translatable="false">com.oshanrube.gatecontroller.fileprovider</string>
+    <!-- Without a browser that supports Trusted Web Activities, open a Custom Tab rather than a
+         WebView: the web app's push notifications and service worker need a real browser. -->
+    <string name="fallback_type" translatable="false">customtabs</string>
+</resources>
