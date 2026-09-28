@@ -4,7 +4,9 @@ plugins {
 
 android {
     namespace = "com.oshanrube.gatecontroller"
-    compileSdk = 35
+    // androidbrowserhelper 2.6.2 pulls in androidx.browser 1.9, which needs API 36 to compile
+    // against (as Bubblewrap's template does). targetSdk, the runtime behaviour, stays at 35.
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.oshanrube.gatecontroller"

@@ -50,7 +50,7 @@ https://gatecontroller.oshanrube.com/data-safety (the web app's).
 
 ## Build
 
-Requires JDK 17 and the Android SDK (API 35).
+Requires JDK 17 and the Android SDK (API 36).
 
 ```sh
 ./gradlew assembleDebug
