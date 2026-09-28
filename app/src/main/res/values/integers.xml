@@ -1,0 +1,3 @@
+<resources>
+    <integer name="splash_fade_out_ms">300</integer>
+</resources>
