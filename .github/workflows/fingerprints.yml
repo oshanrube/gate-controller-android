@@ -1,0 +1,82 @@
+name: Print signing fingerprints
+
+# The SHA-256 fingerprints gate-controller's /.well-known/assetlinks.json needs
+# (ANDROID_APP_SHA256_FINGERPRINTS), without which Chrome shows its address bar over the app.
+# Fingerprints are public (every copy of the app carries its certificate), so printing them is
+# safe; the secrets they are read with are not printed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: A version code already on Play, to ask which key Play signed it with
+        required: true
+        default: "10"
+
+permissions:
+  contents: read
+
+jobs:
+  fingerprints:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Upload key (from the UPLOAD_KEYSTORE_BASE64 secret)
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+        run: |
+          keystore="$RUNNER_TEMP/upload.jks"
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          sha=$(keytool -list -v -keystore "$keystore" -storepass "$UPLOAD_KEYSTORE_PASSWORD" \
+                  -alias "${UPLOAD_KEY_ALIAS:-upload}" | sed -n 's/^\s*SHA256: //p')
+          rm -f "$keystore"
+          echo "UPLOAD_SHA256=$sha" >> "$GITHUB_ENV"
+          echo "Upload key SHA-256: $sha"
+
+      - name: App signing key (Play's, from the Play Developer API)
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          pip install --quiet google-auth requests
+          python3 - <<'PY'
+          import json, os, requests
+          from google.oauth2 import service_account
+          from google.auth.transport.requests import Request
+
+          credentials = service_account.Credentials.from_service_account_info(
+              json.loads(os.environ["PLAY_SERVICE_ACCOUNT_JSON"]),
+              scopes=["https://www.googleapis.com/auth/androidpublisher"],
+          )
+          credentials.refresh(Request())
+          response = requests.get(
+              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/"
+              f"com.oshanrube.gatecontroller/generatedApks/{os.environ['VERSION_CODE']}",
+              headers={"Authorization": f"Bearer {credentials.token}"},
+              timeout=30,
+          )
+          if response.status_code != 200:
+              raise SystemExit(f"Play API answered {response.status_code}: {response.text}")
+
+          hashes = sorted({apk["certificateSha256Hash"] for apk in response.json().get("generatedApks", [])})
+          if not hashes:
+              raise SystemExit("Play returned no generated APKs for that version code.")
+          for raw in hashes:
+              hexdigits = raw.replace(":", "").upper()
+              sha = ":".join(hexdigits[i:i + 2] for i in range(0, len(hexdigits), 2))
+              print(f"App signing key SHA-256: {sha}")
+              with open(os.environ["GITHUB_ENV"], "a") as env:
+                  env.write(f"SIGNING_SHA256={sha}\n")
+          PY
+
+      - name: The line for gate-controller's .env
+        run: |
+          line="ANDROID_APP_SHA256_FINGERPRINTS=$SIGNING_SHA256,$UPLOAD_SHA256"
+          echo "$line"
+          printf '### Digital Asset Links\n\n```\n%s\n```\n' "$line" >> "$GITHUB_STEP_SUMMARY"
