@@ -4,14 +4,14 @@ plugins {
 
 android {
     namespace = "com.oshanrube.gatecontroller"
-    // androidbrowserhelper 2.6.2 pulls in androidx.browser 1.9, which needs API 36 to compile
-    // against (as Bubblewrap's template does). targetSdk, the runtime behaviour, stays at 35.
+    // Android 16. Play requires new apps to target it, and androidx.browser 1.9 (from
+    // androidbrowserhelper 2.6.2) needs it to compile against; Bubblewrap's template does both.
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.oshanrube.gatecontroller"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // Play needs a higher versionCode on every upload; CI passes its run number.
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = "1.0.0"
